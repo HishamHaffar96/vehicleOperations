@@ -11,3 +11,63 @@ generator client {
   binaryTargets = ["native", "linux-musl"]
 }
 
+model VehicleType {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  vehicles          Vehicles[]
+  routes            Routes[]
+  OperationVehicles OperationVehicles[]
+}
+
+model Operation {
+  id   Int      @id @default(autoincrement())
+  name String
+  date DateTime
+
+  operationVehicles OperationVehicles[]
+}
+
+model Vehicles {
+  id            Int    @id @default(autoincrement())
+  vehicleTypeId Int
+  vin           String @unique
+  plateNumber   String
+
+  vehicleType VehicleType     @relation(fields: [vehicleTypeId], references: [id])
+  gpsLogs     VehicleGpsLog[]
+}
+
+model VehicleGpsLog {
+  id        Int                  @id @default(autoincrement())
+  vehicleId Int
+  speed     Float?
+  position  Unsupported("point")
+  battery   Int?
+  direction Float?
+  acc       Boolean? // engine_is_on
+  charging  Boolean?
+
+  vehicle Vehicles @relation(fields: [vehicleId], references: [id])
+}
+
+model OperationVehicles {
+  id            Int @id @default(autoincrement())
+  operationId   Int
+  vehicleTypeId Int
+  quantity      Int
+
+  operation   Operation   @relation(fields: [operationId], references: [id])
+  vehicleType VehicleType @relation(fields: [vehicleTypeId], references: [id])
+}
+
+model Routes {
+  id            Int                  @id @default(autoincrement())
+  vehicleTypeId Int
+  source        Unsupported("point")
+  destination   Unsupported("point")
+  durationInSec Int?
+  distance      Float?
+
+  vehicleType VehicleType @relation(fields: [vehicleTypeId], references: [id])
+}
