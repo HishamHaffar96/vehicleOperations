@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import * as JWT from 'jsonwebtoken';
 import Joi from 'joi';
 import { FastifyReply, FastifyRequest } from 'fastify';
+import { ZodError } from 'zod';
 
 export const prisma = new PrismaClient();
 
@@ -74,17 +75,28 @@ export const utils = {
     };
   },
 
-  preValidation: (schema: Joi.ObjectSchema) => {
-    return (
-      request: FastifyRequest,
-      reply: FastifyReply,
-      done: (err?: Error) => void,
-    ) => {
-      const { error } = schema.validate(request.body);
-      if (error) {
-        return done(error);
+
+   preValidation : (schema) => {
+    return async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        // This is likely where the error comes from, replacing validate() with parse()
+        const parsedBody = schema.parse(request.body);
+        request.body = parsedBody; // Make sure to set the validated data on the request
+      } catch (error) {
+        if (error instanceof ZodError) {
+          return reply.status(400).send({
+            success: false,
+            message: 'Validation error',
+            data: error.errors,
+          });
+        }
+        return reply.status(500).send({
+          success: false,
+          message: 'Internal Server Error',
+          data: error.message,
+        });
       }
-      done();
-    };
-  },
-};
+    }
+  }
+  };
+

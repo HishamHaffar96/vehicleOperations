@@ -12,30 +12,38 @@ generator client {
 }
 
 model VehicleType {
-  id   Int    @id @default(autoincrement())
-  name String
-
-  vehicles          Vehicles[]
-  routes            Routes[]
-  OperationVehicles OperationVehicles[]
+  id                Int                @id @default(autoincrement())
+  name              String
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
+  vehicles          Vehicle[]
+  routes            Route[]
+  OperationVehicles OperationVehicle[]
+  Schedule          Schedule[]
 }
 
 model Operation {
-  id   Int      @id @default(autoincrement())
-  name String
-  date DateTime
-
-  operationVehicles OperationVehicles[]
+  id                Int                @id @default(autoincrement())
+  name              String
+  date              DateTime
+  operationStatus   OperationStatus
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  operationVehicles OperationVehicle[]
 }
 
-model Vehicles {
-  id            Int    @id @default(autoincrement())
+model Vehicle {
+  id            Int             @id @default(autoincrement())
   vehicleTypeId Int
-  vin           String @unique
+  vin           String          @unique
   plateNumber   String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  VehicleStatus VehicleStatus
+  vehicleType   VehicleType     @relation(fields: [vehicleTypeId], references: [id])
+  gpsLogs       VehicleGpsLog[]
 
-  vehicleType VehicleType     @relation(fields: [vehicleTypeId], references: [id])
-  gpsLogs     VehicleGpsLog[]
+  @@index([vehicleTypeId])
 }
 
 model VehicleGpsLog {
@@ -47,27 +55,72 @@ model VehicleGpsLog {
   direction Float?
   acc       Boolean? // engine_is_on
   charging  Boolean?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
 
-  vehicle Vehicles @relation(fields: [vehicleId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId])
 }
 
-model OperationVehicles {
+model OperationVehicle {
   id            Int @id @default(autoincrement())
   operationId   Int
   vehicleTypeId Int
   quantity      Int
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   operation   Operation   @relation(fields: [operationId], references: [id])
   vehicleType VehicleType @relation(fields: [vehicleTypeId], references: [id])
+
+  @@index([operationId])
+  @@index([vehicleTypeId])
 }
 
-model Routes {
+model Route {
   id            Int                  @id @default(autoincrement())
   vehicleTypeId Int
-  source        Unsupported("point")
-  destination   Unsupported("point")
+  source        Json
+  destination   Json
   durationInSec Int?
   distance      Float?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   vehicleType VehicleType @relation(fields: [vehicleTypeId], references: [id])
+  schedules   Schedule[]
+
+  @@index([vehicleTypeId])
+}
+
+model Schedule {
+  id            Int      @id @default(autoincrement())
+  vehicleTypeId Int
+  routeId       Int
+  startTime     DateTime
+  endTime       DateTime
+  activeDays Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  route       Route       @relation(fields: [routeId], references: [id])
+  vehicleType VehicleType @relation(fields: [vehicleTypeId], references: [id])
+
+  @@index([vehicleTypeId])
+  @@index([routeId])
+}
+
+enum VehicleStatus {
+  working
+  stopped
+  
+}
+
+enum OperationStatus {
+  active
+  canceled
+  completed
 }

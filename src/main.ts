@@ -1,11 +1,19 @@
 import fastify from 'fastify';
 import pino from 'pino';
+import { registerVehicleTypeRoutes } from "./routes/VehicleType.router";
+import { registerOperationRoutes } from "./routes/Operation.router";
+import { registerOperationVehicleRoutes } from "./routes/OperationVehicle.router";
+import { registerVehicleRoutes } from "./routes/Vehicle.router";
+import { registerRouteRoutes } from "./routes/Route.router";
+import { registerScheduleRoutes } from "./routes/Schedule.router";
 
 import loadConfig from './config/env.config';
-import { utils } from './utils';
+import { utils } from './utils/utils';
 import formbody from '@fastify/formbody';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import swagger from '@fastify/swagger';
+import swaggerUI from '@fastify/swagger-ui';
 
 loadConfig();
 
@@ -14,7 +22,7 @@ const host = String(process.env.API_HOST);
 
 const startServer = async () => {
   const server = fastify({
-    logger: pino({ level: process.env.LOG_LEVEL }),
+    logger: true,
   });
 
   // Register middlewares
@@ -23,14 +31,46 @@ const startServer = async () => {
   server.register(helmet);
 
   // Register routes
-
+ 
+  await registerVehicleTypeRoutes(server);
+  await registerOperationRoutes(server);
+  await registerOperationVehicleRoutes(server);
+  await registerVehicleRoutes(server);
+  await registerRouteRoutes(server);
+  await registerScheduleRoutes(server);
 
   // Set error handler
   server.setErrorHandler((error, _request, reply) => {
     server.log.error(error);
     reply.status(500).send({ error: 'Something went wrong' });
   });
+ // Register Swagger
+ await server.register(swagger, {
+  swagger: {
+    info: {
+      title: 'Vehicle Operations API',
+      description: 'API documentation for vehicle operations',
+      version: '1.0.0',
+    },
+    host: 'localhost:3000', 
+    schemes: ['http'],
+    consumes: ['application/json'],
+    produces: ['application/json'],
+  },
+});
 
+await server.register(swaggerUI, {
+  routePrefix: '/docs', // Swagger UI will be available at http://localhost:3000/docs
+  staticCSP: true,
+  uiConfig: {
+    docExpansion: 'full',
+    deepLinking: false,
+  },
+  transformSpecification: (swaggerObject, request, reply) => {
+    return swaggerObject;
+  },
+  transformSpecificationClone: true,
+});
   // Health check route
   server.get('/health', async (_request, reply) => {
     try {

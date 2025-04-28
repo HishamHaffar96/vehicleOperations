@@ -1,6 +1,6 @@
-import { utils } from '../utils';
+import { utils } from '../utils/utils';
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../utils';
+import { prisma } from '../utils/utils';
 import { ERRORS } from './errors.helper';
 
 export const checkValidRequest = (
@@ -41,16 +41,16 @@ export const checkValidUser = async (
   }
 
   try {
-    const userData = await prisma.user.findUnique({
-      where: { id: decoded.id },
-    });
-    if (!userData) {
-      return reply
-        .code(ERRORS.unauthorizedAccess.statusCode)
-        .send(ERRORS.unauthorizedAccess.message);
-    }
+    // const userData = await prisma.user.findUnique({
+    //   where: { id: decoded.id },
+    // });
+    // if (!userData) {
+    //   return reply
+    //     .code(ERRORS.unauthorizedAccess.statusCode)
+    //     .send(ERRORS.unauthorizedAccess.message);
+    // }
 
-    request['authUser'] = userData;
+    // request['authUser'] = userData;
   } catch (e) {
     return reply
       .code(ERRORS.unauthorizedAccess.statusCode)
